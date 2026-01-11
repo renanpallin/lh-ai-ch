@@ -22,6 +22,7 @@ SAMPLE_DOCUMENTS = [
     {
         "filename": "company_handbook.pdf",
         "title": "Company Handbook",
+        "tags": ["internal", "hr"],
         "content": [
             "Welcome to Acme Corporation",
             "",
@@ -41,6 +42,7 @@ SAMPLE_DOCUMENTS = [
     {
         "filename": "technical_specification.pdf",
         "title": "Technical Specification",
+        "tags": ["technical"],
         "content": [
             "Project: Document Processing System",
             "Version: 1.0",
@@ -65,6 +67,7 @@ SAMPLE_DOCUMENTS = [
     {
         "filename": "meeting_notes_q4.pdf",
         "title": "Q4 Meeting Notes",
+        "tags": ["meeting", "internal"],
         "content": [
             "Quarterly Review Meeting",
             "Date: October 15, 2024",
@@ -88,6 +91,7 @@ SAMPLE_DOCUMENTS = [
     {
         "filename": "user_guide.pdf",
         "title": "User Guide",
+        "tags": ["manual"],
         "content": [
             "DocProc User Guide",
             "",
@@ -113,6 +117,7 @@ SAMPLE_DOCUMENTS = [
     {
         "filename": "security_policy.pdf",
         "title": "Security Policy",
+        "tags": [],  # No tags for testing
         "content": [
             "Information Security Policy",
             "Effective Date: January 1, 2024",
@@ -168,11 +173,14 @@ def create_pdf(filename: str, title: str, content: list[str]) -> str:
     return filepath
 
 
-def upload_document(filepath: str) -> dict:
-    """Upload a PDF to the API."""
+def upload_document(filepath: str, tags: list[str] = None) -> dict:
+    """Upload a PDF to the API with optional tags."""
     with open(filepath, "rb") as f:
         files = {"file": (os.path.basename(filepath), f, "application/pdf")}
-        response = requests.post(f"{API_URL}/documents", files=files)
+        data = {}
+        if tags:
+            data = [("tags", tag) for tag in tags]
+        response = requests.post(f"{API_URL}/documents", files=files, data=data)
         response.raise_for_status()
         return response.json()
 
@@ -185,8 +193,10 @@ def main():
         print(f"Creating {doc['filename']}...")
         filepath = create_pdf(doc["filename"], doc["title"], doc["content"])
 
-        print(f"Uploading {doc['filename']}...")
-        result = upload_document(filepath)
+        tags = doc.get("tags", [])
+        tags_str = f" (tags: {', '.join(tags)})" if tags else " (no tags)"
+        print(f"Uploading {doc['filename']}{tags_str}...")
+        result = upload_document(filepath, tags)
         print(f"  Created document ID: {result['id']}")
 
         os.remove(filepath)
