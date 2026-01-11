@@ -1,8 +1,9 @@
 import os
 from datetime import datetime
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, UploadFile, HTTPException
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, UploadFile, HTTPException, Query, Form
+from sqlalchemy import select, any_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,8 +20,20 @@ ALLOWED_CONTENT_TYPES = {"application/pdf"}
 ALLOWED_EXTENSIONS = {".pdf"}
 
 
+def normalize_tags(tags: list[str] = Form(default=[])) -> list[str]:
+    """Normalize tags to lowercase and remove duplicates."""
+    return list({tag.strip().lower() for tag in tags if tag.strip()})
+
+
+NormalizedTags = Annotated[list[str], Depends(normalize_tags)]
+
+
 @router.post("/documents")
-async def upload_document(file: UploadFile, db: AsyncSession = Depends(get_db)):
+async def upload_document(
+    file: UploadFile,
+    tags: NormalizedTags,
+    db: AsyncSession = Depends(get_db)
+):
     safe_filename = os.path.basename(file.filename)
     if not safe_filename:
         raise HTTPException(status_code=400, detail="Invalid filename")
@@ -52,6 +65,7 @@ async def upload_document(file: UploadFile, db: AsyncSession = Depends(get_db)):
         content=text_content,
         file_size=file_size,
         page_count=page_count,
+        tags=tags,
     )
     db.add(document)
     await db.commit()
@@ -65,14 +79,20 @@ async def upload_document(file: UploadFile, db: AsyncSession = Depends(get_db)):
     db.add(processing_status)
     await db.commit()
 
-    return {"id": document.id, "filename": document.filename}
+    return {"id": document.id, "filename": document.filename, "tags": document.tags}
 
 
 @router.get("/documents")
-async def list_documents(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(Document).options(joinedload(Document.processing_status))
-    )
+async def list_documents(
+    tag: Optional[str] = Query(None, description="Filter by tag"),
+    db: AsyncSession = Depends(get_db)
+):
+    query = select(Document).options(joinedload(Document.processing_status))
+
+    if tag:
+        query = query.where(tag.lower() == any_(Document.tags))
+
+    result = await db.execute(query)
     documents = result.scalars().all()
 
     return [
@@ -81,6 +101,7 @@ async def list_documents(db: AsyncSession = Depends(get_db)):
             filename=doc.filename,
             file_size=doc.file_size,
             page_count=doc.page_count,
+            tags=doc.tags or [],
             status=doc.processing_status.status if doc.processing_status else "unknown",
             created_at=doc.created_at,
         )
@@ -106,6 +127,7 @@ async def get_document(document_id: int, db: AsyncSession = Depends(get_db)):
         content=document.content,
         file_size=document.file_size,
         page_count=document.page_count,
+        tags=document.tags or [],
         status=document.processing_status.status if document.processing_status else "unknown",
         created_at=document.created_at,
     )

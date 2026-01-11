@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, ARRAY
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -13,6 +13,7 @@ class Document(Base):
     content = Column(Text)
     file_size = Column(Integer)
     page_count = Column(Integer)
+    tags = Column(ARRAY(String), default=list)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     processing_status = relationship(
