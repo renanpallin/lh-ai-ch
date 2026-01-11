@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import select, any_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -10,10 +12,17 @@ router = APIRouter()
 
 
 @router.get("/search")
-async def search_documents(q: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(Document).where(Document.content.ilike(f"%{q}%"))
-    )
+async def search_documents(
+    q: str,
+    tag: Optional[str] = Query(None, description="Filter by tag"),
+    db: AsyncSession = Depends(get_db)
+):
+    query = select(Document).where(Document.content.ilike(f"%{q}%"))
+
+    if tag:
+        query = query.where(tag.lower() == any_(Document.tags))
+
+    result = await db.execute(query)
     documents = result.scalars().all()
 
     return [

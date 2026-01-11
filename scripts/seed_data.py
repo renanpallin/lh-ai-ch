@@ -22,7 +22,7 @@ SAMPLE_DOCUMENTS = [
     {
         "filename": "company_handbook.pdf",
         "title": "Company Handbook",
-        "tags": ["internal", "hr"],
+        "tags": ["internal", "hr", "policy", "onboarding"],
         "content": [
             "Welcome to Acme Corporation",
             "",
@@ -42,7 +42,7 @@ SAMPLE_DOCUMENTS = [
     {
         "filename": "technical_specification.pdf",
         "title": "Technical Specification",
-        "tags": ["technical"],
+        "tags": ["technical", "documentation", "it"],
         "content": [
             "Project: Document Processing System",
             "Version: 1.0",
