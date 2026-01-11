@@ -29,7 +29,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
-      - upload_data:/tmp/docproc_uploads
+      - ./upload_data:/tmp/docproc_uploads
 
   frontend:
     build: ./frontend
