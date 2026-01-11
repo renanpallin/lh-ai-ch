@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { searchDocuments } from '../api'
 
-function SearchBar() {
+function SearchBar({ selectedTag }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [showResults, setShowResults] = useState(false)
@@ -14,7 +14,7 @@ function SearchBar() {
 
     try {
       setSearching(true)
-      const data = await searchDocuments(query)
+      const data = await searchDocuments(query, selectedTag)
       setResults(data)
       setShowResults(true)
     } catch (err) {
@@ -27,9 +27,14 @@ function SearchBar() {
   return (
     <div className="search-container">
       <form className="search-bar" onSubmit={handleSearch}>
+        {selectedTag && (
+          <span className="search-tag-indicator" title={`Searching within tag: ${selectedTag}`}>
+            #{selectedTag}
+          </span>
+        )}
         <input
           type="text"
-          placeholder="Search documents..."
+          placeholder={selectedTag ? `Search in "${selectedTag}"...` : "Search documents..."}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => results.length > 0 && setShowResults(true)}
