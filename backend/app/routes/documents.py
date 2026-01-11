@@ -21,8 +21,12 @@ ALLOWED_EXTENSIONS = {".pdf"}
 
 @router.post("/documents")
 async def upload_document(file: UploadFile, db: AsyncSession = Depends(get_db)):
+    safe_filename = os.path.basename(file.filename)
+    if not safe_filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
     # Validate file type
-    file_ext = os.path.splitext(file.filename)[1].lower()
+    file_ext = os.path.splitext(safe_filename)[1].lower()
     if file_ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
@@ -30,7 +34,11 @@ async def upload_document(file: UploadFile, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid file type. Only PDF files are allowed")
 
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-    file_path = os.path.join(settings.UPLOAD_DIR, file.filename)
+    file_path = os.path.join(settings.UPLOAD_DIR, safe_filename)
+
+    # verify the final path is inside UPLOAD_DIR
+    if not os.path.abspath(file_path).startswith(os.path.abspath(settings.UPLOAD_DIR)):
+        raise HTTPException(status_code=400, detail="Invalid filename")
 
     with open(file_path, "wb") as f:
         content = await file.read()
@@ -40,7 +48,7 @@ async def upload_document(file: UploadFile, db: AsyncSession = Depends(get_db)):
     text_content, page_count = await extract_text_from_pdf(file_path)
 
     document = Document(
-        filename=file.filename,
+        filename=safe_filename,
         content=text_content,
         file_size=file_size,
         page_count=page_count,
