@@ -1,10 +1,32 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { uploadDocument } from '../api'
 
 function UploadForm() {
   const [file, setFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
+  const fileInputRef = useRef(null)
+
+  function handleFileChange(e) {
+    const selectedFile = e.target.files?.[0]
+
+    if (!selectedFile) {
+      setFile(null)
+      return
+    }
+
+    if (!selectedFile.name.toLowerCase().endsWith('.pdf')) {
+      setError('Only PDF files are allowed')
+      setFile(null)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+      return
+    }
+
+    setError(null)
+    setFile(selectedFile)
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -30,8 +52,10 @@ function UploadForm() {
       {error && <div className="error">{error}</div>}
       <form onSubmit={handleSubmit}>
         <input
+          ref={fileInputRef}
           type="file"
-          onChange={(e) => setFile(e.target.files[0])}
+          accept=".pdf,application/pdf"
+          onChange={handleFileChange}
           disabled={uploading}
         />
         <button type="submit" disabled={!file || uploading}>

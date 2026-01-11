@@ -15,8 +15,20 @@ from app.config import settings
 router = APIRouter()
 
 
+ALLOWED_CONTENT_TYPES = {"application/pdf"}
+ALLOWED_EXTENSIONS = {".pdf"}
+
+
 @router.post("/documents")
 async def upload_document(file: UploadFile, db: AsyncSession = Depends(get_db)):
+    # Validate file type
+    file_ext = os.path.splitext(file.filename)[1].lower()
+    if file_ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+
+    if file.content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(status_code=400, detail="Invalid file type. Only PDF files are allowed")
+
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     file_path = os.path.join(settings.UPLOAD_DIR, file.filename)
 
@@ -102,6 +114,10 @@ async def delete_document(document_id: int, db: AsyncSession = Depends(get_db)):
 
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
+
+    file_path = os.path.join(settings.UPLOAD_DIR, document.filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)
 
     if document.processing_status:
         await db.delete(document.processing_status)
