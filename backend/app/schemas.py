@@ -15,6 +15,7 @@ class DocumentResponse(DocumentBase):
     id: int
     file_size: Optional[int] = None
     page_count: Optional[int] = None
+    tags: list[str] = []
     status: str
     created_at: datetime
 

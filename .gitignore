@@ -38,6 +38,7 @@ Thumbs.db
 # Uploads
 /uploads/
 /tmp/
+upload_data/
 
 # Test
 .coverage

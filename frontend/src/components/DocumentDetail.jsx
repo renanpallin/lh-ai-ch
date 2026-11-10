@@ -57,6 +57,14 @@ function DocumentDetail() {
         <p>Pages: {document.page_count || 'Unknown'}</p>
         <p>Size: {formatFileSize(document.file_size)}</p>
         <p>Uploaded: {new Date(document.created_at).toLocaleString()}</p>
+        {document.tags && document.tags.length > 0 && (
+          <div className="document-tags">
+            <span className="tags-label">Tags:</span>
+            {document.tags.map(tag => (
+              <span key={tag} className="tag">{tag}</span>
+            ))}
+          </div>
+        )}
       </div>
       <h3>Extracted Content</h3>
       <div className="content">
